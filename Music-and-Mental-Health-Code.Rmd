@@ -1,0 +1,235 @@
+---
+title: "R Notebook"
+output: html_notebook: default
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+# Step 1 : Data Collection and Import
+# Enter the required file path under the read_excel() function in readxl library
+library(readxl)
+Music_and_Mental_Health <- read_excel("Music_and_Mental_Health.xlsx") 
+raw_df <- Music_and_Mental_Health
+View(raw_df)
+```
+
+```{r}
+# Step 2 : Data Preprocessing
+# We use the skimr library in R to provide summary statistics for Exploratory Data Analysis (EDA) 
+# We identify and omit the NA values in the dataset using the na.omit function
+# Particularly we observed 107 missing values and 7 unusual values for the column 'bpm' 
+# without any prior knowledge of how the BPM values were found out,
+# Hence we have removed the rows with these missing values (and other rows which exist separately) 
+# thus reducing the dataset to a size of 609.
+# We remove the redundant columns of "timestamp" and "permissions" using the %in% function to locate the columns. 
+library(skimr)
+df <- na.omit(raw_df)
+df <- df[, !(names(df) %in% c("timestamp", "permissions"))]
+df <- df[df$bpm >= 20 & df$bpm <= 220, ]
+```
+
+```{r}
+# Step 3 : Defining the variables
+# For ordinal variables (Frequency of listening to genre specific music) :
+frequency_vars <- c("classical", "country", "edm", "folk", "gospel", "hiphop",
+                    "jazz", "kpop", "latin", "lofi", "metal", "pop", "r_and_b",
+                    "rap", "rock", "video_game")
+for (var in frequency_vars){
+  df[[var]] <- as.numeric(as.factor(df[[var]]))
+  # We have done this to match the coded values with that of data in "genre".
+  # Never : 1, Rarely : 2, Sometimes : 3, Very frequently : 4
+}
+
+# For Yes/No variables (listen at work, instrumentalist, composer, exploratory, foreign) :
+yes_no_vars <- c("listen_at_work", "instrumentalist", "composer", "exploratory", "foreign")
+for (var in yes_no_vars){
+  df[[var]] <- ifelse(df[[var]] == "Yes", 1, 0) # Yes : 1, No : 0
+}
+
+# For remaining categorical variables, we will define them as follows :
+streaming_order <- c("Spotify", "YouTube Music", "Apple Music", "Pandora",
+                     "Other streaming service", "I do not use a streaming service.") 
+df$streaming_service <- match(df$streaming_service, streaming_order)
+df$streaming_service <- as.numeric(df$streaming_service)
+streaming_service <- df$streaming_service
+df$genre <- tolower(gsub(" ", "", df$genre))
+df$genre <- match(df$genre, frequency_vars)
+df$genre <- as.numeric(df$genre)
+genre <- df$genre
+# genre is matched with frequency_vars due to the same order of given data values.
+df$music_effects <- ifelse(df$music_effects == "Worsen", 1,
+                        ifelse(df$music_effects == "No effect", 2,
+                               ifelse(df$music_effects == "Improve", 3, NA)))
+df$music_effects <- as.numeric(df$music_effects)
+music_effects <- df$music_effects
+
+# We now create a data frame of the defined variables as 'data'
+# On using skim(data), we observe 64 NA values for the new genre variable
+# We also observed some unusual values for the bpm variable
+# We filter out the NA values, reducing the dataset to a size of 545
+data <- df
+data <- na.omit(data)
+rownames(data) <- NULL
+skim(data) # ensures all variables are converted to numeric form for visualizations before clustering.
+
+# Try visualizations like scatter plot, correlation heatmap, before clustering.
+library(corrplot)
+numerical_vars <- c("age", "hours_per_day", "bpm", "anxiety", "depression",
+                    "insomnia", "ocd", "classical", "country", "edm", "folk",
+                    "gospel", "hiphop", "jazz", "kpop", "latin", "lofi",
+                    "metal", "pop", "r_and_b", "rap", "rock", "video_game",
+                    "genre", "streaming_service", "music_effects")
+corr_data <- data[numerical_vars]
+corr_matrix <- cor(corr_data, use = "complete.obs") # complete observations (without NA)
+corrplot(corr_matrix, method = "color", type = "upper",
+         order = "hclust", tl.col = "black", tl.srt = 45)
+# We have used hierarchical clustering here for ordering the visualizations.
+# However for clustering, we will be using non-hierarchical clustering using k-means.
+```
+
+```{r}
+# Step 4 : Performing Clustering
+# Clustering algorithms can be used both for categorical and numeric data
+# The reason why we chose this over PCA or FA was due to :
+# x necessarily being numeric for PCA, which also posed a problem for FA
+# There are issues when it comes to using clustering for nominal variables.
+# We have tried to balance the trade-off between accuracy and efficiency with our code.
+library(cluster)
+# We are scaling the numerical variables, which will give us standardized values
+# The values on scaling will follow N(0,1) i.e. standard normal distribution
+# Thus, we will get positive as well as negative values centered around 0 with variance unity
+numerical_vars_cluster <- c("age", "hours_per_day", "bpm", "anxiety", "depression", "insomnia", "ocd")
+data[numerical_vars_cluster] <- scale(data[numerical_vars_cluster])
+
+# Encode variable streaming_service as a dummy variable
+# We use cbind to combine columns together to remove the original streaming service column
+library(caret)
+streaming_dummies <- dummyVars(" ~ streaming_service", data = data)
+streaming_encoded <- data.frame(predict(streaming_dummies, newdata = data))
+data_cluster <- cbind(data[, !(names(data) %in% "streaming_service")], streaming_encoded)
+
+# Remove rows with NA values
+data_cluster <- na.omit(data_cluster)
+
+# Re-encode character columns to numeric columns for data.frame to work
+# We use lapply to apply a function to multiple columns at once
+data_cluster[yes_no_vars] <- lapply(data_cluster[yes_no_vars],
+                                    function(x) ifelse(x == "Yes", 1, 0))
+
+# Map out the frequency categories to numeric values as well for data.frame to work
+frequency_mapping <- c("Never" = 1, "Rarely" = 2, "Sometimes" = 3, "Very frequently" = 4)
+data_cluster[frequency_vars] <- lapply(data_cluster[frequency_vars],
+                                       function(x) frequency_mapping[x])
+
+# Convert genre to numeric
+data_cluster$genre <- as.numeric(data_cluster$genre)
+
+# data_cluster as data frame
+data_cluster <- data.frame(data_cluster)
+
+# Check for remaining NAs
+print(colSums(is.na(data_cluster)))
+
+# Check for NaN (Not a Number)
+nan_counts <- sapply(data_cluster, function(col) sum(is.nan(col)))
+print(nan_counts)
+
+# Check for Inf (infinity)
+inf_counts <- sapply(data_cluster, function(col) sum(is.infinite(col)))
+print(inf_counts)
+
+# K-means clustering
+# This method is best used for spherical clusters.
+# This procedure is performed with a initial seed set of 123
+# The k-means clusters are formed randomly with k centers (here, we start with k = 3)
+set.seed(123)
+kmeans_result <- kmeans(data_cluster, centers = 3)
+# Cluster means shows the average values for each variable within each cluster.
+# Clustering vector shows the cluster assignment done for each data point.
+# The Within cluster sum of squares by cluster section shows the within-cluster variation
+# The ratio between_SS/total_SS shows the ratio of between cluster variance to total variance
+
+# Silhouette score
+# This is a method used to determine the optimal number of clusters to be used
+# A silhouette coefficient is calculated using the formula :
+# s(i) = (b(i) - a(i))/(max{a(i), b(i)})
+# Here, a(i) denotes average distance from i to all other points in same cluster
+# and b(i) denotes minimum average distance from i to points in a different cluster
+# s(i) close to +1 indicates the clusters are well-separated
+# s(i) close to 0 indicates the clusters are not well-separated (overlapping clusters)
+# s(i) close to -1 indicates the clusters are not well assigned
+library(cluster)
+silhouette_avg <- silhouette(kmeans_result$cluster, dist(data_cluster))
+mean(silhouette_avg[, 3])
+
+# Elbow and silhouette method for optimal k
+# Elbow method : We plot the within-cluster sum of squares (WSS) for different values of k
+# Lower WSS values indicate that data points within each cluster are closer to the cluster's centroid
+wss <- sapply(2:10, function(k) kmeans(data_cluster, centers = k)$tot.withinss)
+plot(2:10, wss, type = "b", xlab = "Number of clusters",
+     ylab = "Within cluster sum of squares", main = "Elbow Method Plot")
+# Silhouette method : We plot the average silhouette scores for different values of k
+silhouette_scores <- sapply(2:10, function(k)
+  mean(silhouette(kmeans(data_cluster, centers = k)$cluster, dist(data_cluster))[, 3]))
+plot(2:10, silhouette_scores, type = "b", xlab = "Number of clusters",
+     ylab = "Average silhouette score", main = "Silhouette Method Plot")
+
+# We observe that the silhouette method provides a clearer result than the elbow method
+# Thus, we perform k-means clustering again with optimal k = 2 as seen from the plot and analyze them
+kmeans_result_optimal <- kmeans(data_cluster, centers = 2)
+silhouette_avg_optimal <- silhouette(kmeans_result_optimal$cluster, dist(data_cluster))
+mean(silhouette_avg_optimal[, 3])
+
+# Analyze clusters
+data_cluster$cluster <- kmeans_result_optimal$cluster # Assigns data points to cluster 1 or 2
+aggregate(data_cluster, by = list(data_cluster$cluster), mean)
+```
+
+```{r}
+# Step 5 : Visualizations of clusters
+# We can visualize clustering using a heatmap.
+# A heatmap will provide the relationship between variables in the data and clusters formed by them
+# We can use ggplot2 to generate a heatmap showing the mean of each variable per cluster,
+# employing color gradients to highlight differences and rotated labels for readability.
+library(ggplot2)
+library(reshape2)
+library(tidyr)
+
+# Remove the 'cluster' column from data_cluster
+data_cluster$cluster <- NULL
+# Create a grouping variable
+grouping_var <- kmeans_result_optimal$cluster
+# Prepare data for ggplot2
+cluster_means <- aggregate(data_cluster, by = list(grouping_var), mean)
+# Rename the grouping column
+colnames(cluster_means)[1] <- "Group.1"
+cluster_means_melted <- reshape2::melt(cluster_means, id.vars = "Group.1")
+# Trim whitespace from column names
+colnames(cluster_means_melted) <- trimws(colnames(cluster_means_melted))
+
+# Generate ggplot2 heatmap
+ggplot(cluster_means_melted, aes(x = variable, y = factor(Group.1), fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Cluster Variable Means", x = "Variables", y = "Clusters")
+
+# Use spread() from tidyr library
+cluster_means_long <- cluster_means_melted %>%
+  spread(key = "variable", value = "value")
+
+# Explicitly transform cluster_means_long to long format for ggplot
+cluster_means_long_long <- cluster_means_long %>%
+  pivot_longer(cols = -Group.1, names_to = "variable", values_to = "value")
+
+# Parallel coordinates plot
+ggplot(cluster_means_long_long, aes(group = factor(Group.1))) +
+  geom_line(aes(x = variable, y = value, color = factor(Group.1))) +
+  geom_point(aes(x = variable, y = value, color = factor(Group.1))) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Parallel Coordinates Plot of Cluster Means",
+       x = "Variables", y = "Mean Value", color = "Cluster")
+```
