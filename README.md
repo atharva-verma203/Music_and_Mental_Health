@@ -17,7 +17,7 @@ This project explores the intricate relationship between music preferences and m
     * Filtered BPM values in the range 20-220 for consistency
 2.  **Exploratory Data Analysis (EDA) and Visualization**:
     * Structured and encoded variables into a cohesive dataframe
-    * Visualized correlations using **hierarchical** cluster correlation plots
+    * Visualized correlations using hierarchical cluster correlation plots
 3.  **K-Means Clustering Techniques**:
     * Determined optimal clusters using Elbow Method
     * Validated clustering using Silhouette Method
