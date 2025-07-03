@@ -1,18 +1,25 @@
-# Music_and_Mental_Health
+# Music and Mental Health
+
 Exploring the relationship between music preferences and mental health using clustering techniques
 
 ## 🎶 Recording Listener Profiles -- Analyzing Music and Mental Health
+
 This project explores the intricate relationship between music preferences and mental health indicators like anxiety, depression, and insomnia. By applying statistical techniques such as clustering, we identify distinct listener profiles revealing the correlation of different musical genres with mental health and overall well-being.
 
 ## 📊 Overview
+
 •	**Objective** : To investigate the relationship between music preferences and associated mental health conditions
+
 •	**Key Questions** :
-1.	How do different genres of music impact mental health?
-2.	Can clustering reveal hidden patterns in music preferences and mental health metrics?
+  1.	How do different genres of music impact mental health?
+  2.	Can clustering reveal hidden patterns in music preferences and mental health metrics?
+
 •	**Dataset** : Self-reported survey data on genres, musical preferences, and mental health metrics [Kaggle Dataset] (https://www.kaggle.com/datasets/catherinerasgaitis/mxmh-survey-results)
+
 •	**Tools** : R (for statistical modeling and visualization)
 
 ## 💡Project Highlights
+
 1.	Data Preprocessing :
 a.	Identified and handled missing values
 b.	Filtered BPM values in the range 20-220 for consistency
