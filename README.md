@@ -16,17 +16,17 @@ This project explores the intricate relationship between music preferences and m
 ## 💡 Project Highlights
 
 1.  **Data Preprocessing**:
-    a. Identified and handled missing values
-    b. Filtered BPM values in the range 20-220 for consistency
+    * Identified and handled missing values
+    * Filtered BPM values in the range 20-220 for consistency
 2.  **Exploratory Data Analysis (EDA) and Visualization**:
-    a. Structured and encoded variables into a cohesive dataframe
-    b. Visualized correlations using **hierarchical** cluster correlation plots
+    * Structured and encoded variables into a cohesive dataframe
+    * Visualized correlations using **hierarchical** cluster correlation plots
 3.  **K-Means Clustering Techniques**:
-    a. Determined optimal clusters using Elbow Method
-    b. Validated clustering using Silhouette Method
+    * Determined optimal clusters using Elbow Method
+    * Validated clustering using Silhouette Method
 4.  **Cluster Visualizations**:
-    a. Generated a heatmap for cluster variable means
-    b. Created parallel coordinates plot to analyze cluster characteristics
+    * Generated a heatmap for cluster variable means
+    * Created parallel coordinates plot to analyze cluster characteristics
 5.  **Interpretations**:
-    a. Identified distinct listener profiles based on their music preferences and mental health metrics
-    b. Observed lower levels of anxiety and depression for soft music preferences (e.g. classical, jazz), and slightly elevated levels for hard music preferences (e.g. rock, metal)
+    * Identified distinct listener profiles based on their music preferences and mental health metrics
+    * Observed lower levels of anxiety and depression for soft music preferences (e.g. classical, jazz), and slightly elevated levels for hard music preferences (e.g. rock, metal)
