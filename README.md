@@ -1,6 +1,3 @@
-# Music and Mental Health
-Exploring the relationship between music preferences and mental health using clustering techniques
-
 ## 🎶 Recording Listener Profiles -- Analyzing Music and Mental Health
 This project explores the intricate relationship between music preferences and mental health indicators like anxiety, depression, and insomnia. By applying statistical techniques such as clustering, we identify distinct listener profiles revealing the correlation of different musical genres with mental health and overall well-being.
 
